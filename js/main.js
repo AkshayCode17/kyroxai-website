@@ -8,8 +8,25 @@
   const productsLink = productsItem?.querySelector(':scope > a');
   const megaMenu = document.getElementById('stn-mega-menu');
 
-  if (heroVideo && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    heroVideo.pause();
+  if (heroVideo) {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const desktopViewport = window.matchMedia('(min-width: 901px)');
+    const syncHeroVideo = () => {
+      if (reducedMotion.matches || !desktopViewport.matches) {
+        heroVideo.pause();
+        return;
+      }
+
+      heroVideo.play().catch(error => {
+        if (error.name !== 'AbortError') {
+          console.warn('Hero video playback failed:', error);
+        }
+      });
+    };
+
+    syncHeroVideo();
+    reducedMotion.addEventListener('change', syncHeroVideo);
+    desktopViewport.addEventListener('change', syncHeroVideo);
   }
 
   const updateHeader = () => {
@@ -156,6 +173,7 @@
   const revealTargets = document.querySelectorAll(
     '.about-section__header, .about-card, #partners, .core-services__header, ' +
     '.core-services__card, .stats-slider, ' +
+    '.careers-section .kx-reveal, ' +
     '.kx-contact__panel, .kx-contact__form'
   );
 
@@ -175,6 +193,132 @@
     revealTargets.forEach(target => revealObserver.observe(target));
   } else {
     revealTargets.forEach(target => target.classList.add('is-visible'));
+  }
+
+  const careerSlider = document.querySelector('[data-career-slider]');
+
+  if (careerSlider) {
+    const careerSlides = [...careerSlider.children];
+    let activeCareerSlide = 0;
+    let careerSliderTimer;
+
+    const pauseCareerSlider = () => {
+      window.clearInterval(careerSliderTimer);
+      careerSliderTimer = undefined;
+    };
+
+    const resumeCareerSlider = () => {
+      if (
+        careerSliderTimer ||
+        document.hidden ||
+        careerSlider.matches(':hover') ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+        careerSlides.length < 2
+      ) return;
+
+      careerSliderTimer = window.setInterval(advanceCareerSlider, 2000);
+    };
+
+    const updateCareerSlider = () => {
+      const firstSlide = careerSlides[0];
+      if (!firstSlide) return;
+
+      const slideGap = parseFloat(getComputedStyle(careerSlider).gap) || 0;
+      const slideStep = firstSlide.getBoundingClientRect().width + slideGap;
+      activeCareerSlide = Math.min(
+        careerSlides.length - 1,
+        Math.max(0, Math.round(careerSlider.scrollLeft / slideStep))
+      );
+    };
+
+    const advanceCareerSlider = () => {
+      if (document.hidden || careerSlides.length < 2) return;
+
+      activeCareerSlide = (activeCareerSlide + 1) % careerSlides.length;
+      const targetSlide = careerSlides[activeCareerSlide];
+      careerSlider.scrollTo({
+        left: targetSlide.offsetLeft - careerSlides[0].offsetLeft,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+      });
+      updateCareerSlider();
+    };
+
+    careerSlider.addEventListener('scroll', updateCareerSlider, { passive: true });
+    careerSlider.addEventListener('pointerenter', pauseCareerSlider);
+    careerSlider.addEventListener('pointerleave', resumeCareerSlider);
+    window.addEventListener('resize', updateCareerSlider);
+    updateCareerSlider();
+
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && careerSlides.length > 1) {
+      resumeCareerSlider();
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          pauseCareerSlider();
+        } else {
+          resumeCareerSlider();
+        }
+      });
+    }
+  }
+
+  const careerFormToggle = document.querySelector('[data-career-form-toggle]');
+  const careerFormPanel = document.getElementById('career-application');
+  const careerFormClose = document.querySelector('[data-career-form-close]');
+  const careerApplicationForm = document.querySelector('[data-career-application-form]');
+  const careerSuccessDialog = document.querySelector('[data-career-success]');
+  const careerSuccessClose = document.querySelector('[data-career-success-close]');
+  const careerLoadingDialog = document.querySelector('[data-career-loading]');
+
+  if (careerFormToggle && careerFormPanel && careerFormClose && careerApplicationForm && careerSuccessDialog && careerSuccessClose && careerLoadingDialog) {
+    careerFormToggle.addEventListener('click', () => {
+      careerFormPanel.showModal();
+      careerFormToggle.setAttribute('aria-expanded', 'true');
+      careerFormPanel.querySelector('input[name="fullName"]')?.focus();
+    });
+
+    careerFormClose.addEventListener('click', () => careerFormPanel.close());
+    careerFormPanel.addEventListener('click', event => {
+      if (event.target === careerFormPanel) careerFormPanel.close();
+    });
+    careerFormPanel.addEventListener('close', () => {
+      careerFormToggle.setAttribute('aria-expanded', 'false');
+      if (!careerSuccessDialog.open) careerFormToggle.focus();
+    });
+
+    careerSuccessClose.addEventListener('click', () => careerSuccessDialog.close());
+    careerSuccessDialog.addEventListener('click', event => {
+      if (event.target === careerSuccessDialog) careerSuccessDialog.close();
+    });
+    careerSuccessDialog.addEventListener('close', () => careerFormToggle.focus());
+
+    careerApplicationForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const resumeInput = careerApplicationForm.querySelector('[data-career-resume]');
+      const resume = resumeInput?.files?.[0];
+
+      if (resume && !/\.(pdf|doc|docx)$/i.test(resume.name)) {
+        resumeInput.setCustomValidity('Please attach your resume as a PDF, DOC, or DOCX file.');
+        resumeInput.reportValidity();
+        resumeInput.addEventListener('change', () => resumeInput.setCustomValidity(''), { once: true });
+        return;
+      }
+
+      if (resume && resume.size > 10 * 1024 * 1024) {
+        resumeInput.setCustomValidity('Please choose a resume smaller than 10 MB.');
+        resumeInput.reportValidity();
+        resumeInput.addEventListener('change', () => resumeInput.setCustomValidity(''), { once: true });
+        return;
+      }
+
+      careerFormPanel.close();
+      careerLoadingDialog.showModal();
+      window.setTimeout(() => {
+        careerLoadingDialog.close();
+        careerApplicationForm.reset();
+        careerSuccessDialog.showModal();
+        careerSuccessClose.focus();
+      }, 1500);
+    });
   }
 
   const counters = [...document.querySelectorAll('#why-kyroxai .stats-section__value')];
@@ -290,12 +434,29 @@
     }, 5000);
   }
 
-  document.querySelector('[data-contact-form]')?.addEventListener('submit', event => {
-    event.preventDefault();
-    const status = event.currentTarget.querySelector('[data-form-status]');
-    if (status) {
-      status.textContent = 'Thanks — this demo form is ready to be connected to your email/form endpoint.';
-    }
-    event.currentTarget.reset();
-  });
+  const contactForm = document.querySelector('[data-contact-form]');
+  const contactLoadingDialog = document.querySelector('[data-contact-loading]');
+  const contactSuccessDialog = document.querySelector('[data-contact-success]');
+  const contactSuccessClose = document.querySelector('[data-contact-success-close]');
+
+  if (contactForm && contactLoadingDialog && contactSuccessDialog && contactSuccessClose) {
+    contactSuccessClose.addEventListener('click', () => contactSuccessDialog.close());
+    contactSuccessDialog.addEventListener('click', event => {
+      if (event.target === contactSuccessDialog) contactSuccessDialog.close();
+    });
+    contactSuccessDialog.addEventListener('close', () => {
+      contactForm.querySelector('button[type="submit"]')?.focus();
+    });
+
+    contactForm.addEventListener('submit', event => {
+      event.preventDefault();
+      contactLoadingDialog.showModal();
+      window.setTimeout(() => {
+        contactLoadingDialog.close();
+        contactForm.reset();
+        contactSuccessDialog.showModal();
+        contactSuccessClose.focus();
+      }, 1500);
+    });
+  }
 })();
