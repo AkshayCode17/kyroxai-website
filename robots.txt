@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.kyroxai.co.in/sitemap.xml
+Sitemap: https://kyroxai.co.in/sitemap.xml

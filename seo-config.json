@@ -1,14 +1,15 @@
 {
   "site": {
     "name": "KyroxAI",
-    "baseUrl": "https://www.kyroxai.co.in",
-    "defaultTitle": "KyroxAI | AI Products, Digital Solutions & Learning Platforms",
-    "defaultDescription": "KyroxAI builds practical AI and digital products, including BeACoder, an industry-focused e-learning platform."
+    "baseUrl": "https://kyroxai.co.in",
+    "defaultTitle": "KyroxAI | AI & Digital Products",
+    "defaultDescription": "KyroxAI builds practical AI, intelligent software and digital products for real-world impact.",
+    "socialImage": "https://kyroxai.co.in/assets/kyroxai-social.png"
   },
   "pages": {
     "/": {
-      "title": "KyroxAI | AI Products, Digital Solutions & Learning Platforms",
-      "description": "KyroxAI builds practical AI and digital products, including BeACoder, an industry-focused e-learning platform.",
+      "title": "KyroxAI | AI & Digital Products",
+      "description": "KyroxAI builds practical AI, intelligent software and digital products for real-world impact.",
       "schema": [
         "Organization",
         "WebSite"

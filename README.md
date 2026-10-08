@@ -25,10 +25,12 @@ then visit `http://localhost:8080`.
 ## SEO
 The homepage includes title, description, robots, canonical, Open Graph, Twitter metadata and Organization JSON-LD. `robots.txt`, `sitemap.xml`, and `seo-config.json` are included.
 
+The branded 1200x630 `assets/kyroxai-social.png` is used for link previews, with `assets/kyroxai-icon.svg` as the site icon.
+
 For every future page, give it a unique title, description, canonical URL, H1, semantic headings, descriptive image alt text, relevant JSON-LD, Open Graph metadata, and add the URL to the sitemap.
 
 ## Production checklist
-- Replace `www.kyroxai.co.in` if the real domain differs.
+- Use the same canonical domain consistently in page metadata and social links.
 - Replace partner placeholders.
 - Replace dummy SVGs with real assets.
 - Connect the contact form to a real form endpoint.
